@@ -73,7 +73,9 @@ class NamedGroupInfo
         ffdhe3072(NamedGroup.ffdhe3072, "DiffieHellman"),
         ffdhe4096(NamedGroup.ffdhe4096, "DiffieHellman"),
         ffdhe6144(NamedGroup.ffdhe6144, "DiffieHellman"),
-        ffdhe8192(NamedGroup.ffdhe8192, "DiffieHellman");
+        ffdhe8192(NamedGroup.ffdhe8192, "DiffieHellman"),
+
+        p256_frodo640aes(NamedGroup.p256_frodo640aes, "EC");
 
         private final int namedGroup;
         private final String name;
@@ -219,7 +221,18 @@ class NamedGroupInfo
 
     static boolean hasLocal(PerConnection perConnection, int namedGroup)
     {
-        return perConnection.local.containsKey(namedGroup);
+        LOG.info("hasLocal, namedGroup:" + namedGroup + ", map:" + perConnection.local);
+        boolean ret;
+        ret = perConnection.local.containsKey(namedGroup);
+        if (ret)
+        {
+            return ret;
+        }
+        // PQC
+        if (namedGroup == NamedGroup.secp256r1 && perConnection.local.containsKey(NamedGroup.p256_frodo640aes))
+            return true;
+        else
+            return false;
     }
 
     static void notifyPeer(PerConnection perConnection, int[] peerNamedGroups)
@@ -281,6 +294,9 @@ class NamedGroupInfo
                 enabled = false;
             }
         }
+
+        if (namedGroup == NamedGroup.p256_frodo640aes) //PQC
+            enabled = true;
 
         NamedGroupInfo namedGroupInfo = new NamedGroupInfo(all, algorithmParameters, enabled);
 
@@ -487,6 +503,8 @@ class NamedGroupInfo
 
     boolean isActive(BCAlgorithmConstraints algorithmConstraints, boolean post13Active, boolean pre13Active)
     {
+        if (this.all == All.p256_frodo640aes) // PQC
+            return true;
         return enabled
             && ((post13Active && isSupportedPost13()) || (pre13Active && isSupportedPre13()))
             && isPermittedBy(algorithmConstraints);
