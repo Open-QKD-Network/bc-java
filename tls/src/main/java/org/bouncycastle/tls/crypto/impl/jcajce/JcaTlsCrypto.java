@@ -1134,6 +1134,10 @@ public class JcaTlsCrypto
             {
                 return Boolean.valueOf(DHUtil.isGroupSupported(this, TlsDHUtils.getNamedDHGroup(namedGroup)));
             }
+            else if (namedGroup == NamedGroup.p256_frodo640aes) // PQC
+            {
+                return true;
+            }
         }
         catch (GeneralSecurityException e)
         {

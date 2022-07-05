@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Hashtable;
 import java.util.Vector;
+import java.util.logging.Logger;
 
 import org.bouncycastle.tls.crypto.TlsAgreement;
 import org.bouncycastle.tls.crypto.TlsCrypto;
@@ -18,6 +19,8 @@ import org.bouncycastle.util.Arrays;
 public class TlsServerProtocol
     extends TlsProtocol
 {
+    private static final Logger LOG = Logger.getLogger(TlsServerProtocol.class.getName());
+
     protected TlsServer tlsServer = null;
     TlsServerContextImpl tlsServerContext = null;
 
@@ -148,7 +151,9 @@ public class TlsServerProtocol
     protected ServerHello generate13ServerHello(ClientHello clientHello, HandshakeMessageInput clientHelloMessage,
         boolean afterHelloRetryRequest) throws IOException
     {
+        LOG.info("In generate13ServerHello, tlsServerContext:" + tlsServerContext);
         SecurityParameters securityParameters = tlsServerContext.getSecurityParametersHandshake();
+        LOG.info("serverSupportedGroups:" + java.util.Arrays.toString(securityParameters.getServerSupportedGroups()));
         if (securityParameters.isRenegotiating())
         {
             throw new TlsFatalAlert(AlertDescription.internal_error);
@@ -296,9 +301,12 @@ public class TlsServerProtocol
             int[] clientSupportedGroups = securityParameters.getClientSupportedGroups();
             int[] serverSupportedGroups = securityParameters.getServerSupportedGroups();
 
+            LOG.info("clientSupportedGroups:" + java.util.Arrays.toString(clientSupportedGroups));
+            LOG.info("serverSupportedGroups:" + java.util.Arrays.toString(serverSupportedGroups));
+
             clientShare = TlsUtils.selectKeyShare(crypto, serverVersion, clientShares, clientSupportedGroups,
                 serverSupportedGroups);
-
+            LOG.info("clientShare:" + clientShare);
             if (null == clientShare)
             {
                 this.retryGroup = TlsUtils.selectKeyShareGroup(crypto, serverVersion, clientSupportedGroups,
@@ -387,6 +395,7 @@ public class TlsServerProtocol
         TlsSecret sharedSecret;
         {
             int namedGroup = clientShare.getNamedGroup();
+            LOG.info("Client KeyShare group:" + namedGroup + ", length:" + clientShare.getKeyExchange().length);
     
             TlsAgreement agreement;
             if (NamedGroup.refersToASpecificCurve(namedGroup))
@@ -397,11 +406,17 @@ public class TlsServerProtocol
             {
                 agreement = crypto.createDHDomain(new TlsDHConfig(namedGroup, true)).createDH();
             }
+            else if (NamedGroup.p256_frodo640aes == namedGroup)
+            {
+                LOG.info("PQC Hybrid key exchange");
+                throw new TlsFatalAlert(AlertDescription.internal_error);
+            }
             else
             {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
             }
 
+            LOG.info("TlsAgreement is:" + agreement + ", namedGroup:" + namedGroup);
             byte[] key_exchange = agreement.generateEphemeral();
             KeyShareEntry serverShare = new KeyShareEntry(namedGroup, key_exchange);
             TlsExtensionsUtils.addKeyShareServerHello(serverHelloExtensions, serverShare);
