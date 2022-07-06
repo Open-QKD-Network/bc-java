@@ -408,8 +408,9 @@ public class TlsServerProtocol
             }
             else if (NamedGroup.p256_frodo640aes == namedGroup)
             {
-                LOG.info("PQC Hybrid key exchange");
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                LOG.info("PQC Hybrid key exchange, crypto:" + crypto);
+                agreement = new org.bouncycastle.tls.crypto.impl.jcajce.JceTlsECDHPQC(
+                    crypto.createECDomain(new TlsECConfig(NamedGroup.secp256r1)).createECDH(), namedGroup);
             }
             else
             {
