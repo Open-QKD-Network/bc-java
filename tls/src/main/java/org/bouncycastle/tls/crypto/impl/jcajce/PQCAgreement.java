@@ -10,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchProviderException;
 import javax.crypto.KeyGenerator;
+import java.util.logging.Logger;
 
 import org.bouncycastle.tls.crypto.TlsAgreement;
 import org.bouncycastle.tls.crypto.TlsSecret;
@@ -25,6 +26,8 @@ import org.bouncycastle.jcajce.spec.KEMExtractSpec;
 public class PQCAgreement
     implements TlsAgreement
 {
+    static final Logger LOG = Logger.getLogger(PQCAgreement.class.getName());
+
     public enum Role {
         CLIENT,
 	SERVER
@@ -33,6 +36,7 @@ public class PQCAgreement
     protected Role role;
     protected KeyPair localKeyPair;
     protected byte[] peerData;
+    protected byte[] sharedSecret;
     protected AlgorithmParameterSpec algorithmParameterSpec;
 
     public PQCAgreement(AlgorithmParameterSpec spec, Role role)
@@ -62,7 +66,7 @@ public class PQCAgreement
         {
             try
             {
-                // return cipher text
+                // calculate shared secret and return cipher text
                 if (algorithmParameterSpec instanceof FrodoParameterSpec)
                 {
                     FrodoPublicKeyParameters fpkp = new FrodoPublicKeyParameters(FrodoParameters.frodokem19888r3, peerData);
@@ -71,18 +75,24 @@ public class PQCAgreement
                     KeyGenerator keyGen = KeyGenerator.getInstance("Frodo", "BCPQC");
                     keyGen.init(new KEMGenerateSpec(pk, "AES"), new SecureRandom());
                     SecretKeyWithEncapsulation secEnc = (SecretKeyWithEncapsulation) keyGen.generateKey();
-                    return secEnc.getEncapsulation();
+                    this.sharedSecret = secEnc.getEncoded();
+                    byte[] ct = secEnc.getEncapsulation();
+                    LOG.info("PQCAgreement.generateEphemeral, cipher text length:" + ct.length + ",shared key length:" + sharedSecret.length);
+                    return ct;
                 }
             }
             catch (NoSuchAlgorithmException e)
-	    {
-	    }
+            {
+                LOG.info("PQCAgreement.generateEphemeral, NoSuchAlgorithmException:" + e);
+            }
             catch (InvalidAlgorithmParameterException e)
-	    {
-	    }
+            {
+                LOG.info("PQCAgreement.generateEphemeral, InvalidAlgorithmParameterException:" + e);
+            }
             catch (NoSuchProviderException e)
-	    {
-	    }
+            {
+                LOG.info("PQCAgreement.generateEphemeral, NoSuchProviderException:" + e);
+            }
             return null;
         }
     }
@@ -94,6 +104,23 @@ public class PQCAgreement
 
     public TlsSecret calculateSecret() throws IOException
     {
+        try
+        {
+            if (role == Role.SERVER)
+            {
+                if (algorithmParameterSpec instanceof FrodoParameterSpec)
+                {
+                    return new JceTlsSecret(null, this.sharedSecret);
+                }
+            }
+            else
+            {
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.info("PQCAgreement.calculateSecret, throws exception:" + e);
+        }
         return null;
     }
 
@@ -110,6 +137,7 @@ public class PQCAgreement
         }
         catch (Exception e)
         {
+            LOG.info("PQCAgreement.initialize, throws exception:" + e);
         }
     }
 }

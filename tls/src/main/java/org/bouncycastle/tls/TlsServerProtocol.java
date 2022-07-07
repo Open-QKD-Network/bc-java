@@ -410,7 +410,7 @@ public class TlsServerProtocol
             {
                 LOG.info("PQC Hybrid key exchange, crypto:" + crypto);
                 agreement = new org.bouncycastle.tls.crypto.impl.jcajce.JceTlsECDHPQC(
-                    crypto.createECDomain(new TlsECConfig(NamedGroup.secp256r1)).createECDH(), namedGroup);
+                    crypto.createECDomain(new TlsECConfig(NamedGroup.secp256r1)).createECDH(), namedGroup, false);
             }
             else
             {
