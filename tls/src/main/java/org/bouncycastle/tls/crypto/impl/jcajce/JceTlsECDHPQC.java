@@ -52,8 +52,8 @@ public class JceTlsECDHPQC
             {
                 byte[] ecdh = new byte[65];
                 System.arraycopy(peerValue, 0, ecdh, 0, 65);
-                byte[] pqc = new byte[9681]; // Frodo640AES public key size 9681
-                System.arraycopy(peerValue, 65, pqc, 0, 9681);
+                byte[] pqc = new byte[9616]; // Frodo640AES public key size 9616
+                System.arraycopy(peerValue, 65, pqc, 0, 9616);
                 this.ecdhAgreement.receivePeerValue(ecdh);
                 this.pqcAgreement.receivePeerValue(pqc);
             }

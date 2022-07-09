@@ -418,11 +418,12 @@ public class TlsServerProtocol
             }
 
             LOG.info("TlsAgreement is:" + agreement + ", namedGroup:" + namedGroup);
+            agreement.receivePeerValue(clientShare.getKeyExchange());
             byte[] key_exchange = agreement.generateEphemeral();
             KeyShareEntry serverShare = new KeyShareEntry(namedGroup, key_exchange);
             TlsExtensionsUtils.addKeyShareServerHello(serverHelloExtensions, serverShare);
 
-            agreement.receivePeerValue(clientShare.getKeyExchange());
+            //agreement.receivePeerValue(clientShare.getKeyExchange());
             sharedSecret = agreement.calculateSecret();
         }
 

@@ -1,6 +1,7 @@
 package org.bouncycastle.tls.crypto.impl.jcajce;
 
 import java.io.IOException;
+import java.security.Security;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.KeyPairGenerator;
@@ -19,6 +20,7 @@ import org.bouncycastle.pqc.crypto.frodo.FrodoPublicKeyParameters;
 import org.bouncycastle.pqc.crypto.frodo.FrodoParameters;
 import org.bouncycastle.pqc.crypto.util.PublicKeyFactory;
 import org.bouncycastle.pqc.jcajce.provider.frodo.BCFrodoPublicKey;
+import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 import org.bouncycastle.jcajce.SecretKeyWithEncapsulation;
 import org.bouncycastle.jcajce.spec.KEMGenerateSpec;
 import org.bouncycastle.jcajce.spec.KEMExtractSpec;
@@ -126,6 +128,16 @@ public class PQCAgreement
 
     private void initialize()
     {
+        if (Security.getProvider(BouncyCastlePQCProvider.PROVIDER_NAME) == null)
+        {
+            Security.addProvider(new BouncyCastlePQCProvider());
+        }
+
+        if (this.role == Role.SERVER)
+        {
+            // For server, we do not need to generate keypair.
+            return;
+        }
         try
         {
             if (algorithmParameterSpec instanceof FrodoParameterSpec)
