@@ -117,6 +117,15 @@ public class PQCAgreement
             }
             else
             {
+                if (algorithmParameterSpec instanceof FrodoParameterSpec)
+                {
+                    // calculate the shared secret
+                    KeyGenerator keyGen = KeyGenerator.getInstance("Frodo", "BCPQC");
+                    keyGen.init(new KEMExtractSpec(this.localKeyPair.getPrivate(), this.peerData, "AES"));
+                    SecretKeyWithEncapsulation enc = (SecretKeyWithEncapsulation) keyGen.generateKey();
+                    this.sharedSecret = enc.getEncoded();
+                    return new JceTlsSecret(null, this.sharedSecret);
+                }
             }
         }
         catch (Exception e)

@@ -5312,10 +5312,12 @@ public class TlsUtils
     {
         if (isNullOrEmpty(supportedGroups))
         {
+            LOG.info("Client collectKeyShares with empty supportedGroups");
             return;
         }
         if (null == keyShareGroups || keyShareGroups.isEmpty())
         {
+            LOG.info("Client collectKeyShares with empty keySharedGroups");
             return;
         }
 
@@ -5324,10 +5326,12 @@ public class TlsUtils
             int supportedGroup = supportedGroups[i];
             Integer supportedGroupElement = Integers.valueOf(supportedGroup);
 
+            LOG.info("Client collectKeyShares with group:" + supportedGroup + ", keyShareGroups:" + keyShareGroups.toString());
             if (!keyShareGroups.contains(supportedGroupElement)
                 || clientAgreements.containsKey(supportedGroupElement)
                 || !crypto.hasNamedGroup(supportedGroup))
             {
+                LOG.info("Client collectKeyShares with group:" + supportedGroup);
                 continue;
             }
 
@@ -5345,6 +5349,11 @@ public class TlsUtils
                 {
                     agreement = crypto.createDHDomain(new TlsDHConfig(supportedGroup, true)).createDH();
                 }
+            }
+            else if (NamedGroup.p256_frodo640aes == supportedGroup) // PQC
+            {
+               agreement = new org.bouncycastle.tls.crypto.impl.jcajce.JceTlsECDHPQC(
+                    crypto.createECDomain(new TlsECConfig(NamedGroup.secp256r1)).createECDH(), supportedGroup, true);
             }
 
             if (null != agreement)

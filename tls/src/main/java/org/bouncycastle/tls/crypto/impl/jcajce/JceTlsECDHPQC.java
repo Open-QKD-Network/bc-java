@@ -45,6 +45,15 @@ public class JceTlsECDHPQC
         LOG.info("JceTlsECDHPQC.receivePeerValue, length:" + peerValue.length);
         if (pqcAgreement.role == PQCAgreement.Role.CLIENT)
         {
+            if (this.namedGroup == NamedGroup.p256_frodo640aes)
+            {
+                byte[] ecdh = new byte[65];
+                System.arraycopy(peerValue, 0, ecdh, 0, 65);
+                byte[] pqc = new byte[9720]; // Frodo640AES cipher text size 9720
+                System.arraycopy(peerValue, 65, pqc, 0, 9720);
+                this.ecdhAgreement.receivePeerValue(ecdh);
+                this.pqcAgreement.receivePeerValue(pqc);
+            }
         }
         else
         {
@@ -62,26 +71,19 @@ public class JceTlsECDHPQC
 
     public TlsSecret calculateSecret() throws IOException
     {
-        if (pqcAgreement.role == PQCAgreement.Role.CLIENT)
+        if (this.namedGroup == NamedGroup.p256_frodo640aes)
         {
-            return null;
+            TlsSecret ecdh = this.ecdhAgreement.calculateSecret();
+            TlsSecret pqc = this.pqcAgreement.calculateSecret();
+            byte[] ecdh_key = ((org.bouncycastle.tls.crypto.impl.AbstractTlsSecret) ecdh).copyData();
+            byte[] pqc_key  = ((org.bouncycastle.tls.crypto.impl.AbstractTlsSecret) pqc).copyData();
+            byte[] hybrid_key = new byte[ecdh_key.length + pqc_key.length];
+            System.arraycopy(ecdh_key, 0, hybrid_key, 0, ecdh_key.length);
+            System.arraycopy(pqc_key, 0, hybrid_key, ecdh_key.length, pqc_key.length);
+            LOG.info("JceTlsECDHPQC.calculateSecret, ecdh_key length:" + ecdh_key.length + ", pqc_key length:" + pqc_key.length);
+            return this.ecdhAgreement.domain.crypto.adoptLocalSecret(hybrid_key);
         }
-        else
-        {
-            if (this.namedGroup == NamedGroup.p256_frodo640aes)
-            {
-                TlsSecret ecdh = this.ecdhAgreement.calculateSecret();
-                TlsSecret pqc = this.pqcAgreement.calculateSecret();
-                byte[] ecdh_key = ((org.bouncycastle.tls.crypto.impl.AbstractTlsSecret) ecdh).copyData();
-                byte[] pqc_key  = ((org.bouncycastle.tls.crypto.impl.AbstractTlsSecret) pqc).copyData();
-                byte[] hybrid_key = new byte[ecdh_key.length + pqc_key.length];
-                System.arraycopy(ecdh_key, 0, hybrid_key, 0, ecdh_key.length);
-                System.arraycopy(pqc_key, 0, hybrid_key, ecdh_key.length, pqc_key.length);
-                LOG.info("JceTlsECDHPQC.calculateSecret, ecdh_key length:" + ecdh_key.length + ", pqc_key length:" + pqc_key.length);
-                return this.ecdhAgreement.domain.crypto.adoptLocalSecret(hybrid_key);
-            }
-            return null;
-        }
+        return null;
     }
 
     private void createPQCAgreement(boolean client)
