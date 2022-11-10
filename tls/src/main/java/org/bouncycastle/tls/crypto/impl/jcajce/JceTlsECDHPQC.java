@@ -92,14 +92,14 @@ public class JceTlsECDHPQC
         {
             if (this.namedGroup == NamedGroup.p256_frodo640aes)
             {
-                pqcAgreement = new PQCAgreement(FrodoParameterSpec.frodokem19888r3, PQCAgreement.Role.CLIENT);
+                pqcAgreement = new PQCAgreement(FrodoParameterSpec.frodokem640aes, PQCAgreement.Role.CLIENT);
             }
         }
         else
         {
             if (this.namedGroup == NamedGroup.p256_frodo640aes)
             {
-                pqcAgreement = new PQCAgreement(FrodoParameterSpec.frodokem19888r3, PQCAgreement.Role.SERVER);
+                pqcAgreement = new PQCAgreement(FrodoParameterSpec.frodokem640aes, PQCAgreement.Role.SERVER);
             }
         }
     }

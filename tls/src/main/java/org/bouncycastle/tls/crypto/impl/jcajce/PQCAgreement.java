@@ -71,7 +71,7 @@ public class PQCAgreement
                 // calculate shared secret and return cipher text
                 if (algorithmParameterSpec instanceof FrodoParameterSpec)
                 {
-                    FrodoPublicKeyParameters fpkp = new FrodoPublicKeyParameters(FrodoParameters.frodokem19888r3, peerData);
+                    FrodoPublicKeyParameters fpkp = new FrodoPublicKeyParameters(FrodoParameters.frodokem640aes, peerData);
                     PublicKey pk = new BCFrodoPublicKey(fpkp);
 
                     KeyGenerator keyGen = KeyGenerator.getInstance("Frodo", "BCPQC");
