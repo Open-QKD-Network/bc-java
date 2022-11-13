@@ -5355,6 +5355,11 @@ public class TlsUtils
                agreement = new org.bouncycastle.tls.crypto.impl.jcajce.JceTlsECDHPQC(
                     crypto.createECDomain(new TlsECConfig(NamedGroup.secp256r1)).createECDH(), supportedGroup, true);
             }
+            else if (NamedGroup.p521_kyber1024 == supportedGroup) // PQC
+            {
+               agreement = new org.bouncycastle.tls.crypto.impl.jcajce.JceTlsECDHPQC(
+                    crypto.createECDomain(new TlsECConfig(NamedGroup.secp521r1)).createECDH(), supportedGroup, true);
+            }
 
             if (null != agreement)
             {
@@ -5412,7 +5417,8 @@ public class TlsUtils
                     continue;
                 }
 
-                if (group == NamedGroup.p256_frodo640aes) // PQC
+                if (group == NamedGroup.p256_frodo640aes ||
+                    group == NamedGroup.p521_kyber1024) // PQC
                 {
                     return clientShare;
                 }

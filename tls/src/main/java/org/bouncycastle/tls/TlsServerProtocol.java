@@ -412,6 +412,12 @@ public class TlsServerProtocol
                 agreement = new org.bouncycastle.tls.crypto.impl.jcajce.JceTlsECDHPQC(
                     crypto.createECDomain(new TlsECConfig(NamedGroup.secp256r1)).createECDH(), namedGroup, false);
             }
+            else if (NamedGroup.p521_kyber1024 == namedGroup)
+            {
+                LOG.info("PQC Hybrid key exchange, crypto:" + crypto);
+                agreement = new org.bouncycastle.tls.crypto.impl.jcajce.JceTlsECDHPQC(
+                    crypto.createECDomain(new TlsECConfig(NamedGroup.secp521r1)).createECDH(), namedGroup, false);
+            }
             else
             {
                 throw new TlsFatalAlert(AlertDescription.internal_error);

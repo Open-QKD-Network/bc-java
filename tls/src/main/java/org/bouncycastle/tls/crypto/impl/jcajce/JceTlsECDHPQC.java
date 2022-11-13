@@ -11,6 +11,7 @@ import org.bouncycastle.tls.crypto.TlsSecret;
 import org.bouncycastle.tls.NamedGroup;
 
 import org.bouncycastle.pqc.jcajce.spec.FrodoParameterSpec;
+import org.bouncycastle.pqc.jcajce.spec.KyberParameterSpec;
 
 public class JceTlsECDHPQC
     implements TlsAgreement
@@ -54,6 +55,15 @@ public class JceTlsECDHPQC
                 this.ecdhAgreement.receivePeerValue(ecdh);
                 this.pqcAgreement.receivePeerValue(pqc);
             }
+            else if (this.namedGroup == NamedGroup.p521_kyber1024)
+            {
+                byte[] ecdh = new byte[133];
+                System.arraycopy(peerValue, 0, ecdh, 0, 133);
+                byte[] pqc = new byte[1568]; // Kyber1024 cipher text size 1568
+                System.arraycopy(peerValue, 133, pqc, 0, 1568);
+                this.ecdhAgreement.receivePeerValue(ecdh);
+                this.pqcAgreement.receivePeerValue(pqc);
+            }
         }
         else
         {
@@ -66,12 +76,22 @@ public class JceTlsECDHPQC
                 this.ecdhAgreement.receivePeerValue(ecdh);
                 this.pqcAgreement.receivePeerValue(pqc);
             }
+            else if (this.namedGroup == NamedGroup.p521_kyber1024)
+            {
+                byte[] ecdh = new byte[133];
+                System.arraycopy(peerValue, 0, ecdh, 0, 133);
+                byte[] pqc = new byte[1568]; // Kyber1024 public key size 1568
+                System.arraycopy(peerValue, 133, pqc, 0, 1568);
+                this.ecdhAgreement.receivePeerValue(ecdh);
+                this.pqcAgreement.receivePeerValue(pqc);
+            }
         }
     }
 
     public TlsSecret calculateSecret() throws IOException
     {
-        if (this.namedGroup == NamedGroup.p256_frodo640aes)
+        if (this.namedGroup == NamedGroup.p256_frodo640aes ||
+            this.namedGroup == NamedGroup.p521_kyber1024)
         {
             TlsSecret ecdh = this.ecdhAgreement.calculateSecret();
             TlsSecret pqc = this.pqcAgreement.calculateSecret();
@@ -94,12 +114,20 @@ public class JceTlsECDHPQC
             {
                 pqcAgreement = new PQCAgreement(FrodoParameterSpec.frodokem640aes, PQCAgreement.Role.CLIENT);
             }
+            else if (this.namedGroup == NamedGroup.p521_kyber1024)
+            {
+                pqcAgreement = new PQCAgreement(KyberParameterSpec.kyber1024, PQCAgreement.Role.CLIENT);
+            }
         }
         else
         {
             if (this.namedGroup == NamedGroup.p256_frodo640aes)
             {
                 pqcAgreement = new PQCAgreement(FrodoParameterSpec.frodokem640aes, PQCAgreement.Role.SERVER);
+            }
+            else if (this.namedGroup == NamedGroup.p521_kyber1024)
+            {
+                pqcAgreement = new PQCAgreement(KyberParameterSpec.kyber1024, PQCAgreement.Role.SERVER);
             }
         }
     }

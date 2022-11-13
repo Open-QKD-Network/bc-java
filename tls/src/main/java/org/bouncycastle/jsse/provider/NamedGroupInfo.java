@@ -75,7 +75,8 @@ class NamedGroupInfo
         ffdhe6144(NamedGroup.ffdhe6144, "DiffieHellman"),
         ffdhe8192(NamedGroup.ffdhe8192, "DiffieHellman"),
 
-        p256_frodo640aes(NamedGroup.p256_frodo640aes, "EC");
+        p256_frodo640aes(NamedGroup.p256_frodo640aes, "EC"),
+        p521_kyber1024(NamedGroup.p521_kyber1024, "EC");
 
         private final int namedGroup;
         private final String name;
@@ -229,7 +230,8 @@ class NamedGroupInfo
             return ret;
         }
         // PQC
-        if (namedGroup == NamedGroup.secp256r1 && perConnection.local.containsKey(NamedGroup.p256_frodo640aes))
+        if ((namedGroup == NamedGroup.secp256r1 && perConnection.local.containsKey(NamedGroup.p256_frodo640aes)) ||
+            (namedGroup == NamedGroup.secp521r1 && perConnection.local.containsKey(NamedGroup.p521_kyber1024)))
             return true;
         else
             return false;
@@ -295,7 +297,8 @@ class NamedGroupInfo
             }
         }
 
-        if (namedGroup == NamedGroup.p256_frodo640aes) //PQC
+        if (namedGroup == NamedGroup.p256_frodo640aes ||
+            namedGroup == NamedGroup.p521_kyber1024) //PQC
             enabled = true;
 
         NamedGroupInfo namedGroupInfo = new NamedGroupInfo(all, algorithmParameters, enabled);
@@ -503,7 +506,8 @@ class NamedGroupInfo
 
     boolean isActive(BCAlgorithmConstraints algorithmConstraints, boolean post13Active, boolean pre13Active)
     {
-        if (this.all == All.p256_frodo640aes) // PQC
+        if (this.all == All.p256_frodo640aes ||
+            this.all == All.p521_kyber1024) // PQC
             return true;
         return enabled
             && ((post13Active && isSupportedPost13()) || (pre13Active && isSupportedPre13()))

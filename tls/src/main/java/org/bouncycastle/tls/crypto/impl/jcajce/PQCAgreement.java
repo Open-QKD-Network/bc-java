@@ -16,10 +16,14 @@ import java.util.logging.Logger;
 import org.bouncycastle.tls.crypto.TlsAgreement;
 import org.bouncycastle.tls.crypto.TlsSecret;
 import org.bouncycastle.pqc.jcajce.spec.FrodoParameterSpec;
+import org.bouncycastle.pqc.jcajce.spec.KyberParameterSpec;
 import org.bouncycastle.pqc.crypto.frodo.FrodoPublicKeyParameters;
 import org.bouncycastle.pqc.crypto.frodo.FrodoParameters;
+import org.bouncycastle.pqc.crypto.crystals.kyber.KyberPublicKeyParameters;
+import org.bouncycastle.pqc.crypto.crystals.kyber.KyberParameters;
 import org.bouncycastle.pqc.crypto.util.PublicKeyFactory;
 import org.bouncycastle.pqc.jcajce.provider.frodo.BCFrodoPublicKey;
+import org.bouncycastle.pqc.jcajce.provider.kyber.BCKyberPublicKey;
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 import org.bouncycastle.jcajce.SecretKeyWithEncapsulation;
 import org.bouncycastle.jcajce.spec.KEMGenerateSpec;
@@ -59,6 +63,12 @@ public class PQCAgreement
                     localKeyPair.getPublic().getEncoded())).getPublicKey();
                 return rawKey;
             }
+            else if (algorithmParameterSpec instanceof KyberParameterSpec)
+            {
+                byte[] rawKey = ((KyberPublicKeyParameters) PublicKeyFactory.createKey(
+                    localKeyPair.getPublic().getEncoded())).getPublicKey();
+                return rawKey;
+            }
             else
             {
                 return null;
@@ -75,6 +85,19 @@ public class PQCAgreement
                     PublicKey pk = new BCFrodoPublicKey(fpkp);
 
                     KeyGenerator keyGen = KeyGenerator.getInstance("Frodo", "BCPQC");
+                    keyGen.init(new KEMGenerateSpec(pk, "AES"), new SecureRandom());
+                    SecretKeyWithEncapsulation secEnc = (SecretKeyWithEncapsulation) keyGen.generateKey();
+                    this.sharedSecret = secEnc.getEncoded();
+                    byte[] ct = secEnc.getEncapsulation();
+                    LOG.info("PQCAgreement.generateEphemeral, cipher text length:" + ct.length + ",shared key length:" + sharedSecret.length);
+                    return ct;
+                }
+                else if (algorithmParameterSpec instanceof KyberParameterSpec)
+                {
+                    KyberPublicKeyParameters fpkp = new KyberPublicKeyParameters(KyberParameters.kyber1024, peerData);
+                    PublicKey pk = new BCKyberPublicKey(fpkp);
+
+                    KeyGenerator keyGen = KeyGenerator.getInstance("Kyber", "BCPQC");
                     keyGen.init(new KEMGenerateSpec(pk, "AES"), new SecureRandom());
                     SecretKeyWithEncapsulation secEnc = (SecretKeyWithEncapsulation) keyGen.generateKey();
                     this.sharedSecret = secEnc.getEncoded();
@@ -114,6 +137,10 @@ public class PQCAgreement
                 {
                     return new JceTlsSecret(null, this.sharedSecret);
                 }
+                else if (algorithmParameterSpec instanceof KyberParameterSpec)
+                {
+                    return new JceTlsSecret(null, this.sharedSecret);
+                }
             }
             else
             {
@@ -121,6 +148,15 @@ public class PQCAgreement
                 {
                     // calculate the shared secret
                     KeyGenerator keyGen = KeyGenerator.getInstance("Frodo", "BCPQC");
+                    keyGen.init(new KEMExtractSpec(this.localKeyPair.getPrivate(), this.peerData, "AES"));
+                    SecretKeyWithEncapsulation enc = (SecretKeyWithEncapsulation) keyGen.generateKey();
+                    this.sharedSecret = enc.getEncoded();
+                    return new JceTlsSecret(null, this.sharedSecret);
+                }
+                else if (algorithmParameterSpec instanceof KyberParameterSpec)
+                {
+                    // calculate the shared secret
+                    KeyGenerator keyGen = KeyGenerator.getInstance("Kyber", "BCPQC");
                     keyGen.init(new KEMExtractSpec(this.localKeyPair.getPrivate(), this.peerData, "AES"));
                     SecretKeyWithEncapsulation enc = (SecretKeyWithEncapsulation) keyGen.generateKey();
                     this.sharedSecret = enc.getEncoded();
@@ -155,6 +191,12 @@ public class PQCAgreement
                 kpg.initialize(this.algorithmParameterSpec, new SecureRandom());
                 this.localKeyPair = kpg.generateKeyPair();
 	    }
+            else if (algorithmParameterSpec instanceof KyberParameterSpec)
+            {
+                KeyPairGenerator kpg = KeyPairGenerator.getInstance("Kyber", "BCPQC");
+                kpg.initialize(this.algorithmParameterSpec, new SecureRandom());
+                this.localKeyPair = kpg.generateKeyPair();
+            }
         }
         catch (Exception e)
         {
